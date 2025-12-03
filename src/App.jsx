@@ -29,7 +29,7 @@ const SignLanguageTranslator = () => {
   };
 
   const [file, setFile] = useState(null);
-  const [inputMode, setInputMode] = useState("upload"); // 'upload' or 'record'
+  const [inputMode, setInputMode] = useState("record"); // 'upload' or 'record'
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState("");
@@ -989,17 +989,22 @@ const SignLanguageTranslator = () => {
   // --- UI Components ---
 
   const InputModeSelector = React.memo(
-    ({ inputModeProp, setInputModeProp, resetStateProp, stopCameraProp }) => (
+    ({ inputModeProp, setInputModeProp, resetStateProp, stopCameraProp, isProcessingProp }) => (
       <div className="flex bg-gray-200 rounded-lg p-1 mb-6 shadow-inner">
         <button
           onClick={() => {
+            if (isProcessingProp) return;
             resetStateProp();
             stopCameraProp();
             setInputModeProp("upload");
           }}
+          disabled={isProcessingProp}
+          title={isProcessingProp ? t("disabledDuringProcessing") : t("uploadButton")}
           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center ${
             inputModeProp === "upload"
               ? "bg-indigo-600 text-white shadow-md"
+              : isProcessingProp
+              ? "text-gray-400 cursor-not-allowed"
               : "text-gray-700 hover:bg-gray-300"
           }`}
         >
@@ -1008,12 +1013,17 @@ const SignLanguageTranslator = () => {
         </button>
         <button
           onClick={() => {
+            if (isProcessingProp) return;
             resetStateProp();
             setInputModeProp("record");
           }}
+          disabled={isProcessingProp}
+          title={isProcessingProp ? t("disabledDuringProcessing") : t("recordButton")}
           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center ${
             inputModeProp === "record"
               ? "bg-indigo-600 text-white shadow-md"
+              : isProcessingProp
+              ? "text-gray-400 cursor-not-allowed"
               : "text-gray-700 hover:bg-gray-300"
           }`}
         >
@@ -1025,7 +1035,7 @@ const SignLanguageTranslator = () => {
   );
 
   const UploadInput = React.memo(
-    ({ fileProp, fileInputRefProp, handleFileSelectProp }) => (
+    ({ fileProp, fileInputRefProp, handleFileSelectProp, isProcessingProp }) => (
       <div className="">
         <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
           <Upload className="mr-2" size={24} />
@@ -1033,8 +1043,18 @@ const SignLanguageTranslator = () => {
         </h2>
 
         <div
-          onClick={() => fileInputRefProp.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 transition-colors"
+          onClick={() => {
+            if (isProcessingProp) return;
+            fileInputRefProp.current?.click();
+          }}
+          role="button"
+          aria-disabled={isProcessingProp}
+          title={isProcessingProp ? t("disabledDuringProcessing") : t("clickToSelect")}
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            isProcessingProp
+              ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+              : "border-gray-300 hover:border-indigo-500 cursor-pointer"
+          }`}
         >
           {!fileProp ? (
             <div>
@@ -1209,13 +1229,14 @@ const SignLanguageTranslator = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Left Column - Input (inlined) */}
+          {/* Input Card */}
           <div className="space-y-6" id="left-column">
             <InputModeSelector
               inputModeProp={inputMode}
               setInputModeProp={setInputMode}
               resetStateProp={resetState}
               stopCameraProp={stopCamera}
+              isProcessingProp={isProcessing}
             />
             <div className="bg-white rounded-lg shadow-lg p-6">
               {inputMode === "upload" ? (
@@ -1223,6 +1244,7 @@ const SignLanguageTranslator = () => {
                   fileProp={file}
                   fileInputRefProp={fileInputRef}
                   handleFileSelectProp={handleFileSelect}
+                  isProcessingProp={isProcessing}
                 />
               ) : (
                 <WebcamRecorder
@@ -1285,7 +1307,7 @@ const SignLanguageTranslator = () => {
             </div>
           </div>
 
-          {/* Right Column - Results */}
+          {/* Results Card */}
           <div className="space-y-6">
             {/* Processing Status */}
             {isProcessing && (

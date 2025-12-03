@@ -61,8 +61,8 @@ export const translations = {
     waitingForTranslation: 'Waiting for translation...',
     extractingLandmarks: 'Extracting landmarks from video...',
     translatingSignLanguage: 'Translating sign language...',
-    translationFailedTryAgain: 'Translation failed. Please try again.'
-    ,
+    translationFailedTryAgain: 'Translation failed. Please try again.',
+    disabledDuringProcessing: 'Cannot change while video is being processed. Please wait.',
     // Language selector tooltips
     language_en_tooltip: 'Switch to English',
     language_de_tooltip: 'Zu Deutsch wechseln',
@@ -135,8 +135,8 @@ export const translations = {
     waitingForTranslation: 'Warten auf Übersetzung...',
     extractingLandmarks: 'Extrahiere Landmarken aus dem Video...',
     translatingSignLanguage: 'Übersetze Gebärdensprache...',
-    translationFailedTryAgain: 'Übersetzung fehlgeschlagen. Bitte versuchen Sie es erneut.'
-    ,
+    translationFailedTryAgain: 'Übersetzung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    disabledDuringProcessing: 'Während der Videobearbeitung kann keine Änderung vorgenommen werden. Bitte warten.',
     // Language selector tooltips
     language_en_tooltip: 'Wechseln zu Englisch',
     language_de_tooltip: 'Zu Deutsch wechseln',
