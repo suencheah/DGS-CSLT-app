@@ -1136,6 +1136,17 @@ const SignLanguageTranslator = () => {
               </span>
             </div>
           )}
+          {fileProp && (
+            <div
+              className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-md flex items-center space-x-1 shadow"
+              title={t("recordedReady")}
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              <span className="font-semibold">
+                {(fileProp.size / (1024 * 1024)).toFixed(2)}MB
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-center mt-4 space-x-4">
@@ -1159,17 +1170,7 @@ const SignLanguageTranslator = () => {
           </button>
         </div>
 
-        {fileProp && (
-          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <p className="text-sm font-medium text-green-800 flex items-center">
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              {t("recordedReady")}{" "}
-              <span className="font-semibold ml-1">
-                {(fileProp.size / (1024 * 1024)).toFixed(2)} MB
-              </span>
-            </p>
-          </div>
-        )}
+        {/* compact badge shown inside the video card; no larger block here */}
       </div>
     )
   );
@@ -1221,13 +1222,17 @@ const SignLanguageTranslator = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8 pt-8">
+        <div className="flex items-center justify-between mb-6 pt-4">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             {t("title")}
           </h1>
           <LanguageSelector langProp={lang} setLangProp={setLang} />
         </div>
-
+        <div className="mb-4 p-2 bg-yellow-50 rounded-lg">
+          <p className="text-sm text-brown-800">
+            <strong>{t("scopeTitle")}:</strong> {t("scopeText")}
+          </p>
+        </div>
         <div className="grid md:grid-cols-2 gap-6">
           {/* Input Card */}
           <div className="space-y-6" id="left-column">
@@ -1567,7 +1572,6 @@ const SignLanguageTranslator = () => {
             </div>
 
             {/* Instructions */}
-            {!isProcessing && !results && !error && (
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">
                   {t("howItWorksTitle")}
@@ -1605,13 +1609,7 @@ const SignLanguageTranslator = () => {
                     <strong>{t("privacyTitle")}:</strong> {t("privacyText")}
                   </p>
                 </div>
-                <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-                  <p className="text-sm text-brown-800">
-                    <strong>{t("scopeTitle")}:</strong> {t("scopeText")}
-                  </p>
-                </div>
               </div>
-            )}
           </div>
         </div>
       </div>

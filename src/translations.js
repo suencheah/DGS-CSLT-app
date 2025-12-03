@@ -35,8 +35,8 @@ export const translations = {
     noVideoUploaded: 'No video uploaded yet.',
     privacyTitle: 'Privacy',
     privacyText: 'Your video never leaves your device. Only numerical landmark data is sent to the server for translation.',
-    scopeTitle: 'Scope',
-    scopeText: 'The AI model is trained with weather related vocabulary, and can only predict weather related vocabulary effectively.',
+    scopeTitle: '* Application Scope',
+    scopeText: 'The AI model is trained with weather related vocabulary, use of vocabulary outside of weather related vocabulary may result in poor results.',
     translationMethods: {
       reranked_s2g_beam_g2t: 'Reranked S2G + Beam G2T: Best Accuracy',
       beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Best Fluency',
@@ -109,8 +109,8 @@ export const translations = {
     noVideoUploaded: 'Noch kein Video hochgeladen.',
     privacyTitle: 'Datenschutz',
     privacyText: 'Ihr Video verlässt niemals Ihr Gerät. Nur numerische Landmark-Daten werden zur Übersetzung an den Server gesendet.',
-    scopeTitle: 'Anwendungsbereich',
-    scopeText: 'Das KI-Modell wurde mit wetterbezogenem Vokabular trainiert und kann nur wetterbezogene Begriffe zuverlässig vorhersagen.',
+    scopeTitle: '* Anwendungsbereich',
+    scopeText: 'Das KI-Modell ist mit wetterbezogenem Wortschatz trainiert. Die Verwendung von Vokabular außerhalb dieses wetterbezogenen Wortschatzes kann zu schlechten Ergebnissen führen.',
     translationMethods: {
       reranked_s2g_beam_g2t: 'Rerankt S2G + Beam G2T: Beste Genauigkeit',
       beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Beste Flüssigkeit',
