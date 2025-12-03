@@ -1,7 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
-  plugins: [react()],
-  base: "/DGS-CSLT-app/", 
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
+  
+  return {
+    plugins: [react()],
+    base: isProduction ? "/DGS-CSLT-app/" : "/",
+  };
 });
