@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    title: 'DGS to German Sign Language Translator',
+    title: 'DGS Sign Speaker',
     uploadButton: 'Upload Video',
     recordButton: 'Record with Webcam',
     step1UploadTitle: 'Upload Video',
@@ -57,6 +57,7 @@ export const translations = {
     log_sending_landmarks: 'Sending landmarks to backend...',
     log_translation_complete: 'Translation complete!',
     log_error_prefix: 'Error: {0}',
+    log_processed_frames: 'Processed {0} frames',
     waitingForTranslation: 'Waiting for translation...',
     extractingLandmarks: 'Extracting landmarks from video...',
     translatingSignLanguage: 'Translating sign language...',
@@ -73,7 +74,7 @@ export const translations = {
     startRecording: 'Start recording'
   },
   de: {
-    title: 'DGS zu Deutscher Gebärdensprache Übersetzer',
+    title: 'DGS-GebärdenSprecher',
     uploadButton: 'Video hochladen',
     recordButton: 'Mit Webcam aufnehmen',
     step1UploadTitle: 'Video hochladen',
@@ -130,6 +131,7 @@ export const translations = {
     log_sending_landmarks: 'Sende Landmark-Daten an den Backend...',
     log_translation_complete: 'Übersetzung abgeschlossen!',
     log_error_prefix: 'Fehler: {0}',
+    log_processed_frames: 'Verarbeitete {0} Frames',
     waitingForTranslation: 'Warten auf Übersetzung...',
     extractingLandmarks: 'Extrahiere Landmarken aus dem Video...',
     translatingSignLanguage: 'Übersetze Gebärdensprache...',
