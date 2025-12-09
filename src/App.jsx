@@ -476,24 +476,24 @@ const SignLanguageTranslator = () => {
 
       // Convert language code to speech synthesis tag if needed (e.g., 'en' -> 'en-US')
       let langTag = lang;
-      if (lang && lang.length === 2) {
-        const langMap = {
-          'en': 'en-US',
-          'es': 'es-ES',
-          'fr': 'fr-FR',
-          'de': 'de-DE',
-          'it': 'it-IT',
-          'pt': 'pt-PT',
-          'nl': 'nl-NL',
-          'pl': 'pl-PL',
-          'ru': 'ru-RU',
-          'ja': 'ja-JP',
-          'zh': 'zh-CN',
-          'ar': 'ar-SA',
-          'hi': 'hi-IN',
-        };
-        langTag = langMap[lang] || lang;
-      }
+      const langMap = {
+        'en': 'en-US',
+        'es': 'es-ES',
+        'fr': 'fr-FR',
+        'de': 'de-DE',
+        'it': 'it-IT',
+        'pt': 'pt-PT',
+        'nl': 'nl-NL',
+        'pl': 'pl-PL',
+        'ru': 'ru-RU',
+        'ja': 'ja-JP',
+        'zh': 'zh-CN',
+        'ar': 'ar-SA',
+        'hi': 'hi-IN',
+        'ms': 'id-ID',
+        'fil': 'id-ID',
+      };
+      langTag = langMap[lang] || lang;
 
       utteranceRef.current = new SpeechSynthesisUtterance(text);
       utteranceRef.current.lang = langTag;
@@ -593,6 +593,9 @@ const SignLanguageTranslator = () => {
   const TranslationFeature = React.memo(({ germanText }) => {
     const languages = [
       { code: 'en', name: 'English', flag: '🇬🇧' },
+      { code: 'ms', name: 'Bahasa Malaysia', flag: '🇲🇾' },
+      { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
+      { code: 'fil', name: 'Filipino', flag: '🇵🇭' },
       { code: 'es', name: 'Spanish', flag: '🇪🇸' },
       { code: 'fr', name: 'French', flag: '🇫🇷' },
       { code: 'it', name: 'Italian', flag: '🇮🇹' },
@@ -600,7 +603,6 @@ const SignLanguageTranslator = () => {
       { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
       { code: 'pl', name: 'Polish', flag: '🇵🇱' },
       { code: 'ru', name: 'Russian', flag: '🇷🇺' },
-      { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
       { code: 'zh', name: 'Chinese', flag: '🇨🇳' },
       { code: 'ar', name: 'Arabic', flag: '🇸🇦' },
       { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
@@ -742,8 +744,7 @@ const SignLanguageTranslator = () => {
       setError("Camera not active.");
       return;
     }
-    // Use an internal chunks buffer on the MediaRecorder instance to avoid
-    // relying on React state updates inside the dataavailable handler.
+    // Use an internal chunks buffer on the MediaRecorder instance to avoid relying on React state updates inside the dataavailable handler.
     try {
       mediaRecorderRef.current = new MediaRecorder(streamRef.current);
     } catch (err) {
