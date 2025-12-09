@@ -40,13 +40,29 @@ const SignLanguageTranslator = () => {
   const [extractionLog, setExtractionLog] = useState([]);
   // Translation history (up to 10 recent records), persisted in localStorage
   const [translationHistory, setTranslationHistory] = useState([]);
-  // Text-to-speech
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [activeSpeakingId, setActiveSpeakingId] = useState(null); // id of the record currently speaking ('results' for current)
+  
+  // Text-to-speech states (separate for each section)
+  const [germanResultsSpeaking, setGermanResultsSpeaking] = useState(false);
+  const [translationFeatureSpeaking, setTranslationFeatureSpeaking] = useState(false);
+  const [historySpeakingId, setHistorySpeakingId] = useState(null);
+  
+  // Copy-to-clipboard states (separate for each section)
+  const [germanResultsCopiedId, setGermanResultsCopiedId] = useState(null);
+  const [translationFeatureCopiedId, setTranslationFeatureCopiedId] = useState(null);
+  const [historyCopiedId, setHistoryCopiedId] = useState(null);
+  
+  // Store translated results from TranslationFeature section
+  const [translationFeatureState, setTranslationFeatureState] = useState({
+    targetLang: 'en',
+    translatedText: '',
+    isTranslating: false,
+    error: null,
+  });
+  
   const utteranceRef = useRef(null);
-  // Copy-to-clipboard state
-  const [copiedId, setCopiedId] = useState(null);
-  const copyTimerRef = useRef(null);
+  const germanResultsCopyTimerRef = useRef(null);
+  const translationFeatureCopyTimerRef = useRef(null);
+  const historyCopyTimerRef = useRef(null);
 
   // Webcam/Recording States
   const [isRecording, setIsRecording] = useState(false);
@@ -388,9 +404,17 @@ const SignLanguageTranslator = () => {
         clearTimeout(recordingTimeoutRef.current);
         recordingTimeoutRef.current = null;
       }
-      if (copyTimerRef.current) {
-        clearTimeout(copyTimerRef.current);
-        copyTimerRef.current = null;
+      if (germanResultsCopyTimerRef.current) {
+        clearTimeout(germanResultsCopyTimerRef.current);
+        germanResultsCopyTimerRef.current = null;
+      }
+      if (translationFeatureCopyTimerRef.current) {
+        clearTimeout(translationFeatureCopyTimerRef.current);
+        translationFeatureCopyTimerRef.current = null;
+      }
+      if (historyCopyTimerRef.current) {
+        clearTimeout(historyCopyTimerRef.current);
+        historyCopyTimerRef.current = null;
       }
     };
   }, []);
@@ -431,64 +455,100 @@ const SignLanguageTranslator = () => {
     setTranslationHistory([]);
   };
 
-  // Text-to-speech helpers
-  const speakTranslation = (text, lang = "de-DE", id = "results") => {
+  // Text-to-speech helpers with section-specific state
+  const speakTranslation = useCallback((text, lang = "de-DE", section = "german", recordId = null) => {
     if (!text || typeof window === "undefined" || !window.speechSynthesis)
       return;
     try {
-      // If clicked again for the same id while speaking, stop
-      if (isSpeaking && activeSpeakingId === id) {
-        stopSpeaking();
+      // Stop any existing speech
+      window.speechSynthesis.cancel();
+      
+      // Check if already speaking in this section
+      const isSpeakingInSection = 
+        (section === "german" && germanResultsSpeaking) ||
+        (section === "translation" && translationFeatureSpeaking) ||
+        (section === "history" && historySpeakingId === recordId);
+      
+      if (isSpeakingInSection) {
+        stopSpeaking(section, recordId);
         return;
       }
 
-      // Stop any existing speech for other id
-      window.speechSynthesis.cancel();
+      // Convert language code to speech synthesis tag if needed (e.g., 'en' -> 'en-US')
+      let langTag = lang;
+      if (lang && lang.length === 2) {
+        const langMap = {
+          'en': 'en-US',
+          'es': 'es-ES',
+          'fr': 'fr-FR',
+          'de': 'de-DE',
+          'it': 'it-IT',
+          'pt': 'pt-PT',
+          'nl': 'nl-NL',
+          'pl': 'pl-PL',
+          'ru': 'ru-RU',
+          'ja': 'ja-JP',
+          'zh': 'zh-CN',
+          'ar': 'ar-SA',
+          'hi': 'hi-IN',
+        };
+        langTag = langMap[lang] || lang;
+      }
+
       utteranceRef.current = new SpeechSynthesisUtterance(text);
-      utteranceRef.current.lang = lang;
+      utteranceRef.current.lang = langTag;
       utteranceRef.current.rate = 1.0;
-      // Try to pick a German voice if available
+      
+      // Try to pick a voice for the target language
       const voices = window.speechSynthesis.getVoices
         ? window.speechSynthesis.getVoices()
         : [];
       if (voices && voices.length) {
-        const german = voices.find(
-          (v) => /de(-|_)|german/i.test(v.lang) || /German/i.test(v.name)
+        const targetVoice = voices.find(
+          (v) => v.lang.startsWith(langTag.split('-')[0])
         );
-        if (german) utteranceRef.current.voice = german;
+        if (targetVoice) utteranceRef.current.voice = targetVoice;
       }
+
       utteranceRef.current.onstart = () => {
-        setIsSpeaking(true);
-        setActiveSpeakingId(id);
+        if (section === "german") setGermanResultsSpeaking(true);
+        else if (section === "translation") setTranslationFeatureSpeaking(true);
+        else if (section === "history" && recordId) setHistorySpeakingId(recordId);
       };
+      
       utteranceRef.current.onend = () => {
-        setIsSpeaking(false);
-        setActiveSpeakingId(null);
+        if (section === "german") setGermanResultsSpeaking(false);
+        else if (section === "translation") setTranslationFeatureSpeaking(false);
+        else if (section === "history") setHistorySpeakingId(null);
       };
+      
       utteranceRef.current.onerror = () => {
-        setIsSpeaking(false);
-        setActiveSpeakingId(null);
+        if (section === "german") setGermanResultsSpeaking(false);
+        else if (section === "translation") setTranslationFeatureSpeaking(false);
+        else if (section === "history") setHistorySpeakingId(null);
       };
+      
       window.speechSynthesis.speak(utteranceRef.current);
     } catch (e) {
       console.warn("[tts] speak failed", e);
     }
-  };
+  }, [germanResultsSpeaking, translationFeatureSpeaking, historySpeakingId]);
 
-  const stopSpeaking = () => {
+  const stopSpeaking = (section = "german", recordId = null) => {
     try {
       if (window.speechSynthesis) window.speechSynthesis.cancel();
     } catch (e) {
       console.warn("[tts] stop failed", e);
     } finally {
-      setIsSpeaking(false);
-      setActiveSpeakingId(null);
+      if (section === "german") setGermanResultsSpeaking(false);
+      else if (section === "translation") setTranslationFeatureSpeaking(false);
+      else if (section === "history") setHistorySpeakingId(null);
       utteranceRef.current = null;
     }
   };
 
-  // Copy-to-clipboard helper with a short visual feedback
-  const copyToClipboard = async (text, id) => {
+  // Copy-to-clipboard helpers with section-specific state
+  const copyToClipboard = useCallback(async (text, section = "german", recordId = null) => {
     if (!text) return;
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -503,20 +563,34 @@ const SignLanguageTranslator = () => {
         document.execCommand("copy");
         document.body.removeChild(ta);
       }
-      setCopiedId(id);
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = setTimeout(() => setCopiedId(null), 2000);
+      
+      let timerRef, setCopiedFn;
+      if (section === "german") {
+        setCopiedFn = setGermanResultsCopiedId;
+        timerRef = germanResultsCopyTimerRef;
+      } else if (section === "translation") {
+        setCopiedFn = setTranslationFeatureCopiedId;
+        timerRef = translationFeatureCopyTimerRef;
+      } else if (section === "history") {
+        setCopiedFn = setHistoryCopiedId;
+        timerRef = historyCopyTimerRef;
+      }
+      
+      // For german and translation: set to true, for history: set to recordId
+      if (section === "history") {
+        setCopiedFn(recordId);
+      } else {
+        setCopiedFn(true);
+      }
+      
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopiedFn(section === "history" ? null : false), 2000);
     } catch (e) {
       console.warn("[copy] failed", e);
     }
-  };
+  }, []);
 
-  const TranslationFeature = ({ germanText }) => {
-    const [targetLang, setTargetLang] = useState('en');
-    const [translatedText, setTranslatedText] = useState('');
-    const [isTranslating, setIsTranslating] = useState(false);
-    const [error, setError] = useState(null);
-
+  const TranslationFeature = React.memo(({ germanText }) => {
     const languages = [
       { code: 'en', name: 'English', flag: '🇬🇧' },
       { code: 'es', name: 'Spanish', flag: '🇪🇸' },
@@ -532,15 +606,6 @@ const SignLanguageTranslator = () => {
       { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
     ];
 
-    // // Google Translate
-    // const translateWithGoogle = async (text, target) => {
-    //   const response = await fetch(
-    //     `https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=${target}&dt=t&q=${encodeURIComponent(text)}`
-    //   );
-    //   const data = await response.json();
-    //   return data[0][0][0];
-    // };
-
     // MyMemory API
     const translateWithMyMemory = async (text, target) => {
       const response = await fetch(
@@ -553,49 +618,25 @@ const SignLanguageTranslator = () => {
       return data.responseData.translatedText;
     };
 
-    // // LibreTranslate
-    // const translateWithLibre = async (text, target) => {
-    //   const response = await fetch('https://libretranslate.de/translate', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       q: text,
-    //       source: 'de',
-    //       target: target,
-    //       format: 'text'
-    //     })
-    //   });
-    //   const data = await response.json();
-    //   return data.translatedText;
-    // };
-
     const translateGermanResults = async () => {
       if (!germanText) return;
       
-      setIsTranslating(true);
-      setError(null);
+      setTranslationFeatureState(prev => ({ ...prev, isTranslating: true, error: null }));
       
       try {
-        // Try multiple services with fallback
         let translated;
         
         try {
-          translated = await translateWithMyMemory(germanText, targetLang);
+          translated = await translateWithMyMemory(germanText, translationFeatureState.targetLang);
         } catch (e) {
           console.warn('MyMemory failed, trying Google:', e);
-          // try {
-          //   translated = await translateWithGoogle(germanText, targetLang);
-          // } catch (e2) {
-          //   console.warn('Google failed, trying LibreTranslate:', e2);
-          //   translated = await translateWithLibre(germanText, targetLang);
-          // }
         }
-        setTranslatedText(translated);
+        setTranslationFeatureState(prev => ({ ...prev, translatedText: translated }));
       } catch (err) {
-        setError('Translation failed. Please try again.');
+        setTranslationFeatureState(prev => ({ ...prev, error: 'Translation failed. Please try again.' }));
         console.error('All translation services failed:', err);
       } finally {
-        setIsTranslating(false);
+        setTranslationFeatureState(prev => ({ ...prev, isTranslating: false }));
       }
     };
 
@@ -608,10 +649,9 @@ const SignLanguageTranslator = () => {
         
         <div className="flex items-center gap-3 mb-3">
           <select
-            value={targetLang}
+            value={translationFeatureState.targetLang}
             onChange={(e) => {
-              setTargetLang(e.target.value);
-              setTranslatedText('');
+              setTranslationFeatureState(prev => ({ ...prev, targetLang: e.target.value, translatedText: '' }));
             }}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
@@ -624,10 +664,10 @@ const SignLanguageTranslator = () => {
           
           <button
             onClick={translateGermanResults}
-            disabled={isTranslating || !germanText}
+            disabled={translationFeatureState.isTranslating || !germanText}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center"
           >
-            {isTranslating ? (
+            {translationFeatureState.isTranslating ? (
               <>
                 <Loader2 className="mr-2 animate-spin" size={16} />
                 {t('translating')}
@@ -638,23 +678,64 @@ const SignLanguageTranslator = () => {
           </button>
         </div>
         
-        {error && (
+        {translationFeatureState.error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-            {error}
+            {translationFeatureState.error}
           </div>
         )}
         
-        {translatedText && (
+        {translationFeatureState.translatedText && (
           <div className="p-3 bg-white rounded-lg border border-indigo-200">
-            <p className="text-gray-800">{translatedText}</p>
-            <p className="text-xs text-gray-500 mt-2">
-              {t('translatedFrom')} {languages.find(l => l.code === targetLang)?.name}
-            </p>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-gray-800">{translationFeatureState.translatedText}</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {t('translatedFrom')} {languages.find(l => l.code === translationFeatureState.targetLang)?.name}
+                </p>
+              </div>
+              <div className="flex-shrink-0 ml-2 flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    speakTranslation(translationFeatureState.translatedText, translationFeatureState.targetLang, "translation");
+                  }}
+                  className={`px-2 py-1 rounded-md text-sm ${
+                    translationFeatureSpeaking
+                      ? "bg-gray-200 text-gray-700"
+                      : "bg-indigo-600 text-white hover:bg-indigo-700"
+                  }`}
+                  title={t("playTranslation")}
+                >
+                  {translationFeatureSpeaking ? "⏹" : "🔊"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    copyToClipboard(translationFeatureState.translatedText, "translation");
+                  }}
+                  disabled={!translationFeatureState.translatedText}
+                  className={`px-3 py-1 rounded-md text-sm ${
+                    translationFeatureCopiedId
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-200 text-gray-700"
+                  } hover:bg-gray-300 disabled:opacity-50`}
+                  title={
+                    translationFeatureCopiedId ? t("copied") : t("copy")
+                  }
+                >
+                  {translationFeatureCopiedId ? t("copied") : t("copy")}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
     );
-  };
+  }, (prevProps, nextProps) => prevProps.germanText === nextProps.germanText);
 
   const startRecording = useCallback(() => {
     if (!streamRef.current) {
@@ -827,16 +908,20 @@ const SignLanguageTranslator = () => {
     return [...leftHand, ...rightHand];
   };
 
-  const extractLandmarksFromVideo = async () => {
+  const extractLandmarksFromVideo = async (onProgressUpdate, onLogUpdate) => {
     return new Promise(async (resolve, reject) => {
       try {
-        // Collect logs locally to avoid state updates during extraction
         const localLogs = [];
-        localLogs.push(
-          `${new Date().toLocaleTimeString()}: ${t(
-            "log_initializing_mediapipe"
-          )}`
-        );
+        const addLocalLog = (message) => {
+          const logMessage = `${new Date().toLocaleTimeString()}: ${message}`;
+          localLogs.push(logMessage);
+          // Update state immediately if callback provided
+          if (onLogUpdate) {
+            onLogUpdate(logMessage);
+          }
+        };
+
+        addLocalLog(t("log_initializing_mediapipe"));
 
         // Load MediaPipe Hands
         const hands = new window.Hands({
@@ -852,22 +937,34 @@ const SignLanguageTranslator = () => {
         });
 
         const landmarksList = [];
+        let processedFrames = 0;
+        let totalFrames = 0;
+        let lastProgressUpdate = 0;
 
         hands.onResults((results) => {
           const frameLandmarks = extractTwoHandLandmarks(results);
           landmarksList.push(frameLandmarks);
-          // Record progress messages locally only every 10 frames
-          // if (processedFrames % 10 === 0) {
-          //   localLogs.push(`${new Date().toLocaleTimeString()}: Processed ${processedFrames} frames...`);
-          // }
+          processedFrames++;
+
+          // Update progress only every 5% increment to reduce re-renders
+          if (totalFrames > 0) {
+            const extractionProgress = (processedFrames / totalFrames) * 50;
+            const roundedProgress = Math.floor(extractionProgress / 5) * 5; // Round to nearest 5%
+            
+            if (roundedProgress > lastProgressUpdate && onProgressUpdate) {
+              lastProgressUpdate = roundedProgress;
+              onProgressUpdate(Math.min(roundedProgress, 50));
+            }
+          }
+
+          // Add log every 25 frames but don't trigger state update
+          if (processedFrames % 25 === 0) {
+            addLocalLog(t("log_processed_frames", processedFrames, totalFrames));
+          }
         });
 
         await hands.initialize();
-        localLogs.push(
-          `${new Date().toLocaleTimeString()}: ${t(
-            "log_mediapipe_initialized"
-          )}`
-        );
+        addLocalLog(t("log_mediapipe_initialized"));
 
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -883,25 +980,15 @@ const SignLanguageTranslator = () => {
         const duration = video.duration;
         const fps = CONFIG.TARGET_FPS;
         const frameInterval = 1 / fps;
-        const totalFrames = Math.max(0, Math.floor(duration * fps));
+        totalFrames = Math.max(0, Math.floor(duration * fps));
 
-        localLogs.push(
-          `${new Date().toLocaleTimeString()}: ${t(
-            "log_video_duration",
-            duration.toFixed(2)
-          )}`
-        );
-        localLogs.push(
-          `${new Date().toLocaleTimeString()}: ${t(
-            "log_extract_frames",
-            totalFrames,
-            fps
-          )}`
-        );
+        addLocalLog(t("log_video_duration", duration.toFixed(2)));
+        addLocalLog(t("log_extract_frames", totalFrames, fps));
 
         canvas.width = CONFIG.IMG_SIZE[0];
         canvas.height = CONFIG.IMG_SIZE[1];
 
+        // Process frames
         for (let i = 0; i < totalFrames; i++) {
           const timestamp = i * frameInterval;
           await new Promise((resolveFrame) => {
@@ -911,17 +998,11 @@ const SignLanguageTranslator = () => {
 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           await hands.send({ image: canvas });
-          // Intentionally do NOT call setProgress or addLog here to avoid rerenders
         }
 
         hands.close();
 
-        localLogs.push(
-          `${new Date().toLocaleTimeString()}: ${t(
-            "log_extracted_frames",
-            landmarksList.length
-          )}`
-        );
+        addLocalLog(t("log_extracted_frames", landmarksList.length));
 
         const uniformTruncate = (sequence, targetLen) => {
           const N = sequence.length;
@@ -936,25 +1017,16 @@ const SignLanguageTranslator = () => {
         };
 
         if (landmarksList.length > CONFIG.MAX_SEQ_LEN) {
-          localLogs.push(
-            `${new Date().toLocaleTimeString()}: ${t(
-              "log_truncating",
-              landmarksList.length,
-              CONFIG.MAX_SEQ_LEN
-            )}`
+          addLocalLog(
+            t("log_truncating", landmarksList.length, CONFIG.MAX_SEQ_LEN)
           );
           const truncated = uniformTruncate(landmarksList, CONFIG.MAX_SEQ_LEN);
           landmarksList.length = 0;
           landmarksList.push(...truncated);
         } else if (landmarksList.length < CONFIG.MAX_SEQ_LEN) {
           const padLen = CONFIG.MAX_SEQ_LEN - landmarksList.length;
-          localLogs.push(
-            `${new Date().toLocaleTimeString()}: ${t(
-              "log_padding",
-              landmarksList.length,
-              CONFIG.MAX_SEQ_LEN,
-              padLen
-            )}`
+          addLocalLog(
+            t("log_padding", landmarksList.length, CONFIG.MAX_SEQ_LEN, padLen)
           );
           for (let p = 0; p < padLen; p++) {
             const padFrame = Array.from({ length: 42 }, () => [-10, -10, -10]);
@@ -962,21 +1034,11 @@ const SignLanguageTranslator = () => {
           }
         }
 
-        localLogs.push(
-          `${new Date().toLocaleTimeString()}: ${t(
-            "log_final_sequence",
-            landmarksList.length
-          )}`
-        );
+        addLocalLog(t("log_final_sequence", landmarksList.length));
 
         const flatLandmarks = landmarksList.map((frame) => frame.flat());
-        localLogs.push(
-          `${new Date().toLocaleTimeString()}: ${t(
-            "log_landmark_extraction_complete"
-          )}`
-        );
+        addLocalLog(t("log_landmark_extraction_complete"));
 
-        // Resolve with both landmarks and the collected logs so caller can update state once
         resolve({ flatLandmarks, logs: localLogs });
       } catch (err) {
         const errMsg = err && err.message ? err.message : String(err);
@@ -1001,24 +1063,29 @@ const SignLanguageTranslator = () => {
     setError(null);
     setResults(null);
     setExtractionLog([]);
-    // Stop camera if it's active and we are translating
     if (isCameraActive) stopCamera();
 
     try {
       // Stage 1: Extract landmarks in frontend
       setCurrentStage(t("extractingLandmarks"));
-      addLog(t("log_starting_landmark_extraction"));
+      setExtractionLog([`${new Date().toLocaleTimeString()}: ${t("log_starting_landmark_extraction")}`]);
 
-      const extractionResult = await extractLandmarksFromVideo();
-      // extractionResult contains { flatLandmarks, logs }
+      // Update extraction logs
+      const extractionResult = await extractLandmarksFromVideo(
+        (progress) => {
+          setProgress(progress);
+        },
+        (log) => {
+          setExtractionLog((prev) => [...prev, log]);
+        }
+      );
+      
       const extractedLandmarks = extractionResult.flatLandmarks || [];
-      // Update UI once after extraction completes
-      setExtractionLog(extractionResult.logs || []);
       setProgress(50);
 
       // Stage 2: Send to backend for translation
       setCurrentStage(t("translatingSignLanguage"));
-      addLog(t("log_sending_landmarks"));
+      setExtractionLog(prev => [...prev, `${new Date().toLocaleTimeString()}: ${t("log_sending_landmarks")}`]);
 
       const response = await fetch(CONFIG.BACKEND_URL, {
         method: "POST",
@@ -1053,7 +1120,14 @@ const SignLanguageTranslator = () => {
         landmarksShape: data.landmarks_shape,
       });
 
-      // Auto-play TTS for the just-produced translation
+      // Reset translation feature state for new results
+      setTranslationFeatureState({
+        targetLang: 'en',
+        translatedText: '',
+        isTranslating: false,
+        error: null,
+      });
+
       try {
         speakTranslation(data.translation, "de-DE", "results");
       } catch (e) {
@@ -1067,7 +1141,6 @@ const SignLanguageTranslator = () => {
           time: new Date().toLocaleString(),
           translation: data.translation,
           confidence: data.confidence || 0,
-          // store method KEY so labels update when language changes
           method: selectedMethod,
         };
         setTranslationHistory((prev) => {
@@ -1083,15 +1156,14 @@ const SignLanguageTranslator = () => {
         console.warn("[history] append failed", e);
       }
 
-      addLog(t("log_translation_complete"));
+      setExtractionLog(prev => [...prev, `${new Date().toLocaleTimeString()}: ${t("log_translation_complete")}`]);
     } catch (err) {
       setError(err.message || t("translationFailedTryAgain"));
-      addLog(t("log_error_prefix", err.message));
+      setExtractionLog(prev => [...prev, `${new Date().toLocaleTimeString()}: ${t("log_error_prefix", err.message)}`]);
       console.error(err);
     } finally {
       setIsProcessing(false);
       setCurrentStage("");
-      // If the user is still in record mode, restart the camera so they can record again immediately
       if (inputMode === "record") {
         try {
           await startCamera();
@@ -1102,9 +1174,7 @@ const SignLanguageTranslator = () => {
     }
   };
 
-  // Provide a stable callback identity for the left column so memoization is effective
   const handleTranslateRef = useRef();
-  // Update ref synchronously to avoid useEffect dependency churn
   handleTranslateRef.current = handleTranslate;
   const stableHandleTranslate = useCallback(() => {
     if (handleTranslateRef.current) handleTranslateRef.current();
@@ -1133,7 +1203,6 @@ const SignLanguageTranslator = () => {
   }, []);
 
   // --- UI Components ---
-
   const InputModeSelector = React.memo(
     ({ inputModeProp, setInputModeProp, resetStateProp, stopCameraProp, isProcessingProp }) => (
       <div className="flex bg-gray-200 rounded-lg p-1 mb-6 shadow-inner">
@@ -1321,29 +1390,36 @@ const SignLanguageTranslator = () => {
     )
   );
 
-  const VideoPreview = React.memo(({ fileProp, previewUrlProp }) => (
-    <div className="mt-4 bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-        <Video className="mr-2" size={24} />
-        {t("videoPreviewTitle")}
-      </h2>
-      {fileProp ? (
-        <video
-          src={
-            previewUrlProp ||
-            (fileProp ? URL.createObjectURL(fileProp) : undefined)
-          }
-          controls
-          className="w-full rounded-lg"
-          style={{ maxHeight: "300px" }}
-        />
-      ) : (
-        <div className="h-48 w-full rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
-          {t("noVideoUploaded")}
-        </div>
-      )}
-    </div>
-  ));
+  const VideoPreview = React.memo(({ fileProp, previewUrlProp }) => {
+    // Use a stable key based on the file to prevent video element recreation
+    const videoKey = fileProp ? `video-${fileProp.name}-${fileProp.size}` : 'no-video';
+    
+    return (
+      <div className="mt-4 bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+          <Video className="mr-2" size={24} />
+          {t("videoPreviewTitle")}
+        </h2>
+        {fileProp ? (
+          <video
+            key={videoKey} // Stable key prevents recreation
+            src={previewUrlProp}
+            controls
+            className="w-full rounded-lg"
+            style={{ maxHeight: "300px" }}
+          />
+        ) : (
+          <div className="h-48 w-full rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
+            {t("noVideoUploaded")}
+          </div>
+        )}
+      </div>
+    );
+  }, (prevProps, nextProps) => {
+    // Custom comparison: only re-render if file actually changed
+    return prevProps.fileProp === nextProps.fileProp && 
+          prevProps.previewUrlProp === nextProps.previewUrlProp;
+  });
 
   const LanguageSelector = React.memo(({ langProp, setLangProp }) => (
     <div className="ml-4">
@@ -1542,33 +1618,39 @@ const SignLanguageTranslator = () => {
                       </p>
                       <div className="flex-shrink-0 ml-2 flex items-center space-x-2">
                         <button
-                          onClick={() =>
-                            speakTranslation(results.translation, "de-DE")
-                          }
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            speakTranslation(results.translation, "de-DE", "german");
+                          }}
                           className={`px-2 py-1 rounded-md text-sm ${
-                            isSpeaking
+                            germanResultsSpeaking
                               ? "bg-gray-200 text-gray-700"
                               : "bg-indigo-600 text-white hover:bg-indigo-700"
                           }`}
                           title={t("playTranslation")}
                         >
-                          {isSpeaking ? "⏹" : "🔊"}
+                          {germanResultsSpeaking ? "⏹" : "🔊"}
                         </button>
                         <button
-                          onClick={() =>
-                            copyToClipboard(results.translation, "results")
-                          }
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            copyToClipboard(results.translation, "german");
+                          }}
                           disabled={!results.translation}
                           className={`px-3 py-1 rounded-md text-sm ${
-                            copiedId === "results"
+                            germanResultsCopiedId
                               ? "bg-green-600 text-white"
                               : "bg-gray-200 text-gray-700"
                           } hover:bg-gray-300 disabled:opacity-50`}
                           title={
-                            copiedId === "results" ? t("copied") : t("copy")
+                            germanResultsCopiedId ? t("copied") : t("copy")
                           }
                         >
-                          {copiedId === "results" ? t("copied") : t("copy")}
+                          {germanResultsCopiedId ? t("copied") : t("copy")}
                         </button>
                       </div>
                     </div>
@@ -1623,8 +1705,7 @@ const SignLanguageTranslator = () => {
                 <ul className="space-y-3 max-h-56 overflow-y-auto">
                   {translationHistory.map((rec) => {
                     const conf = getConfidenceValue(rec.confidence);
-                    const speakingThis =
-                      isSpeaking && activeSpeakingId === rec.id;
+                    const speakingThis = historySpeakingId === rec.id;
                     // rec.method may be a stored key (new) or a label (old). Prefer localized label when key is present.
                     const methodLabel =
                       translationMethods[rec.method] || rec.method;
@@ -1646,9 +1727,12 @@ const SignLanguageTranslator = () => {
                         </div>
                         <div className="ml-2 flex-shrink-0 flex items-center space-x-2">
                           <button
-                            onClick={() =>
-                              speakTranslation(rec.translation, "de-DE", rec.id)
-                            }
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              speakTranslation(rec.translation, "de-DE", "history", rec.id);
+                            }}
                             className={`px-2 py-1 rounded-md text-sm ${
                               speakingThis
                                 ? "bg-gray-200 text-gray-700"
@@ -1663,21 +1747,24 @@ const SignLanguageTranslator = () => {
                             {speakingThis ? "⏹" : "🔊"}
                           </button>
                           <button
-                            onClick={() =>
-                              copyToClipboard(rec.translation, rec.id)
-                            }
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              copyToClipboard(rec.translation, "history", rec.id);
+                            }}
                             className={`px-2 py-1 rounded-md text-sm ${
-                              copiedId === rec.id
+                              historyCopiedId === rec.id
                                 ? "bg-green-600 text-white"
                                 : "bg-gray-200 text-gray-700"
                             }`}
                             title={
-                              copiedId === rec.id
+                              historyCopiedId === rec.id
                                 ? t('copied')
                                 : (t('copyTranslation'))
                             }
                           >
-                            {copiedId === rec.id ? "✓" : "📋"}
+                            {historyCopiedId === rec.id ? "✓" : "📋"}
                           </button>
                           <div
                             className={`${getConfidenceClass(
