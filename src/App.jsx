@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Upload,
+  Globe,
   Video,
   FileText,
   Loader2,
@@ -508,6 +509,151 @@ const SignLanguageTranslator = () => {
     } catch (e) {
       console.warn("[copy] failed", e);
     }
+  };
+
+  const TranslationFeature = ({ germanText }) => {
+    const [targetLang, setTargetLang] = useState('en');
+    const [translatedText, setTranslatedText] = useState('');
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [error, setError] = useState(null);
+
+    const languages = [
+      { code: 'en', name: 'English', flag: '🇬🇧' },
+      { code: 'es', name: 'Spanish', flag: '🇪🇸' },
+      { code: 'fr', name: 'French', flag: '🇫🇷' },
+      { code: 'it', name: 'Italian', flag: '🇮🇹' },
+      { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
+      { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
+      { code: 'pl', name: 'Polish', flag: '🇵🇱' },
+      { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+      { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
+      { code: 'zh', name: 'Chinese', flag: '🇨🇳' },
+      { code: 'ar', name: 'Arabic', flag: '🇸🇦' },
+      { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
+    ];
+
+    // // Google Translate
+    // const translateWithGoogle = async (text, target) => {
+    //   const response = await fetch(
+    //     `https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=${target}&dt=t&q=${encodeURIComponent(text)}`
+    //   );
+    //   const data = await response.json();
+    //   return data[0][0][0];
+    // };
+
+    // MyMemory API
+    const translateWithMyMemory = async (text, target) => {
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|${target}`
+      );
+      const data = await response.json();
+      if (data.responseStatus !== 200) {
+        throw new Error('Translation service unavailable');
+      }
+      return data.responseData.translatedText;
+    };
+
+    // // LibreTranslate
+    // const translateWithLibre = async (text, target) => {
+    //   const response = await fetch('https://libretranslate.de/translate', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //       q: text,
+    //       source: 'de',
+    //       target: target,
+    //       format: 'text'
+    //     })
+    //   });
+    //   const data = await response.json();
+    //   return data.translatedText;
+    // };
+
+    const translateGermanResults = async () => {
+      if (!germanText) return;
+      
+      setIsTranslating(true);
+      setError(null);
+      
+      try {
+        // Try multiple services with fallback
+        let translated;
+        
+        try {
+          translated = await translateWithMyMemory(germanText, targetLang);
+        } catch (e) {
+          console.warn('MyMemory failed, trying Google:', e);
+          // try {
+          //   translated = await translateWithGoogle(germanText, targetLang);
+          // } catch (e2) {
+          //   console.warn('Google failed, trying LibreTranslate:', e2);
+          //   translated = await translateWithLibre(germanText, targetLang);
+          // }
+        }
+        setTranslatedText(translated);
+      } catch (err) {
+        setError('Translation failed. Please try again.');
+        console.error('All translation services failed:', err);
+      } finally {
+        setIsTranslating(false);
+      }
+    };
+
+    return (
+      <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-indigo-200">
+        <h3 className="text-sm font-semibold text-indigo-700 mb-3 flex items-center">
+          <Globe className="mr-2" size={18} />
+          {t('translateTo')}
+        </h3>
+        
+        <div className="flex items-center gap-3 mb-3">
+          <select
+            value={targetLang}
+            onChange={(e) => {
+              setTargetLang(e.target.value);
+              setTranslatedText('');
+            }}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            {languages.map(lang => (
+              <option key={lang.code} value={lang.code}>
+                {lang.flag} {lang.name}
+              </option>
+            ))}
+          </select>
+          
+          <button
+            onClick={translateGermanResults}
+            disabled={isTranslating || !germanText}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center"
+          >
+            {isTranslating ? (
+              <>
+                <Loader2 className="mr-2 animate-spin" size={16} />
+                {t('translating')}
+              </>
+            ) : (
+              t('translateButton')
+            )}
+          </button>
+        </div>
+        
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+            {error}
+          </div>
+        )}
+        
+        {translatedText && (
+          <div className="p-3 bg-white rounded-lg border border-indigo-200">
+            <p className="text-gray-800">{translatedText}</p>
+            <p className="text-xs text-gray-500 mt-2">
+              {t('translatedFrom')} {languages.find(l => l.code === targetLang)?.name}
+            </p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const startRecording = useCallback(() => {
@@ -1366,31 +1512,6 @@ const SignLanguageTranslator = () => {
               </div>
             )}
 
-            {/* {landmarks && !isProcessing && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                  <Eye className="mr-2" size={24} />
-                  Extracted Landmarks
-                </h2>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Frames:</span>
-                    <span className="font-semibold">{landmarks.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Features per frame:</span>
-                    <span className="font-semibold">{landmarks[0]?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total size:</span>
-                    <span className="font-semibold">
-                      {((landmarks.length * landmarks[0]?.length * 4) / 1024).toFixed(2)} KB
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )} */}
-
             {/* Results Display */}
             {results && (
               <div className="bg-white rounded-lg shadow-lg p-6">
@@ -1452,6 +1573,8 @@ const SignLanguageTranslator = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  <TranslationFeature germanText={results.translation} />
 
                   {/* Metadata */}
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t">

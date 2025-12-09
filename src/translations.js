@@ -71,7 +71,11 @@ export const translations = {
     playTranslation: 'Play translation',
     copyTranslation: 'Copy translation',
     stopRecording: 'Stop recording',
-    startRecording: 'Start recording'
+    startRecording: 'Start recording',
+    translateTo: "Translate to Other Languages",
+    translating: "Translating...",
+    translateButton: "Translate",
+    translatedFrom: "Translated from German to",
   },
   de: {
     title: 'DGS-GebärdenSprecher',
@@ -145,6 +149,10 @@ export const translations = {
     playTranslation: 'Übersetzung abspielen',
     copyTranslation: 'Übersetzung kopieren',
     stopRecording: 'Aufnahme stoppen',
-    startRecording: 'Aufnahme starten'
+    startRecording: 'Aufnahme starten',
+    translateTo: "In andere Sprachen übersetzen",
+    translating: "Übersetzen...",
+    translateButton: "Übersetzen",
+    translatedFrom: "Übersetzt von Deutsch nach",
   }
 };

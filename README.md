@@ -1,5 +1,5 @@
 ```
 cd frontend
 npm install -r requirements.txt
-npm start
+npm run dev
 ```
