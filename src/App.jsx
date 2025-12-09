@@ -1332,7 +1332,6 @@ const SignLanguageTranslator = () => {
           <video
             ref={(el) => {
               webcamVideoRefProp.current = el;
-              // If the stream is already available, attach whenever the element mounts or changes
               if (el && streamRef.current) {
                 attachStreamToElementProp(el);
               }
@@ -1340,6 +1339,7 @@ const SignLanguageTranslator = () => {
             className={`w-full h-full object-cover ${
               isRecordingProp ? "border-4 border-red-500" : ""
             }`}
+            style={{ transform: 'scaleX(-1)' }}
             autoPlay
             muted
             playsInline
