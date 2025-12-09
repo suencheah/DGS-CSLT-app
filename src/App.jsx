@@ -36,7 +36,7 @@ const SignLanguageTranslator = () => {
   const [currentStage, setCurrentStage] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedMethod, setSelectedMethod] = useState("reranked_s2g_beam_g2t");
+  const [selectedMethod, setSelectedMethod] = useState("beam_s2g_beam_g2t");
   const [extractionLog, setExtractionLog] = useState([]);
   // Translation history (up to 10 recent records), persisted in localStorage
   const [translationHistory, setTranslationHistory] = useState([]);

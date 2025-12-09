@@ -38,9 +38,8 @@ export const translations = {
     scopeTitle: '* Application Scope',
     scopeText: 'The AI model is trained with weather related vocabulary, use of vocabulary outside of weather related vocabulary may result in poor results.',
     translationMethods: {
-      reranked_s2g_beam_g2t: 'Reranked S2G + Beam G2T: Best Accuracy',
-      beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Best Fluency',
-      beam_s2g_greedy_g2t: 'Beam S2G + Greedy G2T: Balanced'
+      beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Best Accuracy',
+      reranked_s2g_beam_g2t: 'Reranked S2G + Beam G2T: Best Fluency'
     }
     ,
     // Processing log messages (use {0}, {1} for interpolation)
@@ -116,9 +115,8 @@ export const translations = {
     scopeTitle: '* Anwendungsbereich',
     scopeText: 'Das KI-Modell ist mit wetterbezogenem Wortschatz trainiert. Die Verwendung von Vokabular außerhalb dieses wetterbezogenen Wortschatzes kann zu schlechten Ergebnissen führen.',
     translationMethods: {
-      reranked_s2g_beam_g2t: 'Rerankt S2G + Beam G2T: Beste Genauigkeit',
-      beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Beste Flüssigkeit',
-      beam_s2g_greedy_g2t: 'Beam S2G + Greedy-Suche G2T: Ausgewogen'
+      beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Beste Genauigkeit',
+      reranked_s2g_beam_g2t: 'Rerankt S2G + Beam G2T: Beste Flüssigkeit'
     }
     ,
     // Processing log messages (use {0}, {1} for interpolation)
