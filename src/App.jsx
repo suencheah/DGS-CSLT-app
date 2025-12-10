@@ -15,7 +15,25 @@ import {
 import { translations } from "./translations";
 
 const SignLanguageTranslator = () => {
-  const [lang, setLang] = useState("en"); // 'en' or 'de'
+  // Initialize language from localStorage or default to 'en'
+  const [lang, setLang] = useState(() => {
+    try {
+      const savedLang = localStorage.getItem("preferredLanguage");
+      return (savedLang === "en" || savedLang === "de") ? savedLang : "en";
+    } catch (e) {
+      console.warn("[language] failed to load preference", e);
+      return "en";
+    }
+  });
+  // Save language preference to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("preferredLanguage", lang);
+    } catch (e) {
+      console.warn("[language] failed to save preference", e);
+    }
+  }, [lang]);
+
   // t(key, ...args) supports simple numeric placeholders {0}, {1}, ...
   const t = (key, ...args) => {
     const s =
