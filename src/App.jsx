@@ -36,7 +36,7 @@ const SignLanguageTranslator = () => {
   const [currentStage, setCurrentStage] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedMethod, setSelectedMethod] = useState("beam_s2g_beam_g2t");
+  const [selectedMethod, setSelectedMethod] = useState("reranked_s2g_beam_g2t");
   const [extractionLog, setExtractionLog] = useState([]);
   // Translation history (up to 10 recent records), persisted in localStorage
   const [translationHistory, setTranslationHistory] = useState([]);
@@ -1095,7 +1095,7 @@ const SignLanguageTranslator = () => {
         },
         body: JSON.stringify({
           landmarks: extractedLandmarks,
-          method: selectedMethod,
+          method: "reranked_s2g_beam_g2t",
         }),
       });
 
@@ -1142,7 +1142,7 @@ const SignLanguageTranslator = () => {
           time: new Date().toLocaleString(),
           translation: data.translation,
           confidence: data.confidence || 0,
-          method: selectedMethod,
+          method: "reranked_s2g_beam_g2t",
         };
         setTranslationHistory((prev) => {
           const next = [record, ...prev].slice(0, 10);
@@ -1508,7 +1508,7 @@ const SignLanguageTranslator = () => {
               previewUrlProp={previewUrlRef.current}
             />
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            {/* <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                 <Settings className="mr-2" size={24} />
                 {t("advancedTranslationMethod")}
@@ -1532,7 +1532,7 @@ const SignLanguageTranslator = () => {
                   </label>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Results Card */}
@@ -1677,12 +1677,12 @@ const SignLanguageTranslator = () => {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t">
+                  {/* <div className="pt-4 border-t">
                     <p className="text-sm text-gray-600">{t("methodUsed")}</p>
                     <p className="text-sm font-medium text-gray-800">
                       {results.method}
                     </p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
@@ -1717,10 +1717,10 @@ const SignLanguageTranslator = () => {
                       >
                         <div className="flex-1 mr-3">
                           <div className="text-sm text-gray-600">
-                            {rec.time} •{" "}
-                            <span className="text-xs text-gray-500">
+                            {rec.time} {" "}
+                            {/* <span className="text-xs text-gray-500">
                               {methodLabel}
-                            </span>
+                            </span> */}
                           </div>
                           <div className="mt-1 text-gray-800">
                             {rec.translation}
