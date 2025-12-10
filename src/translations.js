@@ -24,7 +24,7 @@ export const translations = {
     confidence: 'Confidence',
     processingTime: 'Processing Time',
     methodUsed: 'Method Used',
-    translationHistory: 'Translation History',
+    translationHistory: 'History',
     clear: 'Clear',
     noTranslations: 'No translations yet. Your recent translations will appear here.',
     howItWorksTitle: 'How It Works',
@@ -75,6 +75,7 @@ export const translations = {
     translating: "Translating...",
     translateButton: "Translate",
     translatedFrom: "Translated from German to",
+    delete: "Delete",
   },
   de: {
     title: 'DGS-GebärdenSprecher',
@@ -101,7 +102,7 @@ export const translations = {
     confidence: 'Zuversicht',
     processingTime: 'Verarbeitungszeit',
     methodUsed: 'Verwendete Methode',
-    translationHistory: 'Übersetzungsverlauf',
+    translationHistory: 'Verlauf',
     clear: 'Löschen',
     noTranslations: 'Noch keine Übersetzungen. Ihre letzten Übersetzungen erscheinen hier.',
     howItWorksTitle: 'Wie es funktioniert',
@@ -152,5 +153,6 @@ export const translations = {
     translating: "Übersetzen...",
     translateButton: "Übersetzen",
     translatedFrom: "Übersetzt von Deutsch nach",
+    delete: "Löschen",
   }
 };

@@ -476,6 +476,16 @@ const SignLanguageTranslator = () => {
     setTranslationHistory([]);
   };
 
+  const deleteHistoryItem = (recordId) => {
+    const updatedHistory = translationHistory.filter(rec => rec.id !== recordId);
+    setTranslationHistory(updatedHistory);
+    try {
+      localStorage.setItem("translationHistory", JSON.stringify(updatedHistory));
+    } catch (e) {
+      console.warn("[history] failed to update after delete", e);
+    }
+  };
+
   // Text-to-speech helpers with section-specific state
   const speakTranslation = useCallback((text, lang = "de-DE", section = "german", recordId = null) => {
     if (!text || typeof window === "undefined" || !window.speechSynthesis)
@@ -1847,7 +1857,7 @@ const SignLanguageTranslator = () => {
                     return (
                       <li
                         key={rec.id}
-                        className="p-3 border rounded-lg flex items-start justify-between"
+                        className="relative p-3 border rounded-lg flex items-start justify-between"
                       >
                         <div className="flex-1 mr-3">
                           <div className="text-sm text-gray-600">
@@ -1909,6 +1919,18 @@ const SignLanguageTranslator = () => {
                             {(conf * 100).toFixed(0)}%
                           </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            deleteHistoryItem(rec.id);
+                          }}
+                          className="absolute bottom-2 right-2 text-sm opacity-40 hover:opacity-100 transition-opacity"
+                          title={t('delete')}
+                        >
+                          🗑️
+                        </button>
                       </li>
                     );
                   })}
