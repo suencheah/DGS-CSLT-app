@@ -1777,14 +1777,14 @@ const SignLanguageTranslator = () => {
 
                 <div className="space-y-4">
                   {/* Gloss Sequence */}
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  {/* <div className="bg-gray-50 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-gray-600 mb-2">
                       {t("glossSequence")}
                     </h3>
                     <p className="text-gray-800 font-mono text-sm">
                       {results.gloss}
                     </p>
-                  </div>
+                  </div> */}
 
                   {/* German Translation */}
                   <div className="bg-indigo-50 rounded-lg p-4">
