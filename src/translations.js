@@ -36,7 +36,7 @@ export const translations = {
     privacyTitle: 'Privacy',
     privacyText: 'Your video never leaves your device. Only numerical landmark data is sent to the server for translation.',
     scopeTitle: '* Application Scope',
-    scopeText: 'The AI model is trained with weather related vocabulary, use of vocabulary outside of weather related vocabulary may result in poor results.',
+    scopeText: 'The AI model is trained with weather related vocabulary in DGS (German Sign Language), use of other sign languages or vocabulary outside of weather related vocabulary may result in poor results.',
     translationMethods: {
       beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Best Accuracy',
       reranked_s2g_beam_g2t: 'Reranked S2G + Beam G2T: Best Fluency'
@@ -116,7 +116,7 @@ export const translations = {
     privacyTitle: 'Datenschutz',
     privacyText: 'Ihr Video verlässt niemals Ihr Gerät. Nur numerische Landmark-Daten werden zur Übersetzung an den Server gesendet.',
     scopeTitle: '* Anwendungsbereich',
-    scopeText: 'Das KI-Modell ist mit wetterbezogenem Wortschatz trainiert. Die Verwendung von Vokabular außerhalb dieses wetterbezogenen Wortschatzes kann zu schlechten Ergebnissen führen.',
+    scopeText: 'Das KI-Modell ist mit wetterbezogenem Vokabular in DGS (Deutsche Gebärdensprache) trainiert. Die Verwendung anderer Gebärdensprachen oder von Vokabular außerhalb des wetterbezogenen Bereichs kann zu schlechten Ergebnissen führen.',
     translationMethods: {
       beam_s2g_beam_g2t: 'Beam S2G + Beam G2T: Beste Genauigkeit',
       reranked_s2g_beam_g2t: 'Rerankt S2G + Beam G2T: Beste Flüssigkeit'
