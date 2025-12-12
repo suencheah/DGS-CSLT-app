@@ -76,6 +76,8 @@ export const translations = {
     translateButton: "Translate",
     translatedFrom: "Translated from German to",
     delete: "Delete",
+    feedbackPrompt: "Help us improve! Share your feedback",
+    feedbackLink: "Fill out feedback form",
   },
   de: {
     title: 'DGS-GebärdenSprecher',
@@ -154,5 +156,7 @@ export const translations = {
     translateButton: "Übersetzen",
     translatedFrom: "Übersetzt von Deutsch nach",
     delete: "Löschen",
+    feedbackPrompt: "Helfen Sie uns, besser zu werden! Teilen Sie Ihr Feedback",
+    feedbackLink: "Feedback-Formular ausfüllen",
   }
 };

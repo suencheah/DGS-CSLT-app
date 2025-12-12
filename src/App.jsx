@@ -1613,6 +1613,22 @@ const SignLanguageTranslator = () => {
           </h1>
           <LanguageSelector langProp={lang} setLangProp={setLang} />
         </div>
+        
+        {/* Feedback Banner */}
+        <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-indigo-200 flex items-center justify-between">
+          <span className="text-sm text-indigo-800">
+            💬 {t("feedbackPrompt")}
+          </span>
+          <a
+            href="https://forms.office.com/r/h6nXRepRke"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 underline"
+          >
+            {t("feedbackLink")} →
+          </a>
+        </div>
+        
         <div className="mb-4 p-2 bg-yellow-50 rounded-lg">
           <p className="text-sm text-brown-800">
             <strong>{t("scopeTitle")}:</strong> {t("scopeText")}
