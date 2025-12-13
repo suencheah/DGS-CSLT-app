@@ -61,6 +61,8 @@ export const translations = {
     extractingLandmarks: 'Extracting landmarks from video...',
     translatingSignLanguage: 'Processing...',
     translationFailedTryAgain: 'Interpretation failed. Please try again.',
+    handDetectionNone: 'No hands detected. Please ensure your hand(s) are visible to the camera and try again.',
+    handDetectionLow: 'Hand detection is too low. Please re-record with your hands clearly visible.',
     disabledDuringProcessing: 'Cannot change while video is being processed. Please wait.',
     // Language selector tooltips
     language_en_tooltip: 'Switch to English',
@@ -141,6 +143,8 @@ export const translations = {
     extractingLandmarks: 'Extrahiere Landmarken aus dem Video...',
     translatingSignLanguage: 'Wird verarbeitet…',
     translationFailedTryAgain: 'Interpretation fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    handDetectionNone: 'Keine Hände erkannt. Bitte stellen Sie sicher, dass Ihre Hand bzw. Ihre Hände für die Kamera sichtbar sind, und versuchen Sie es erneut.',
+    handDetectionLow: 'Handerkennung zu gering. Bitte erneut aufnehmen und auf gut sichtbare Hände achten.',
     disabledDuringProcessing: 'Während der Videobearbeitung kann keine Änderung vorgenommen werden. Bitte warten.',
     // Language selector tooltips
     language_en_tooltip: 'Wechseln zu Englisch',

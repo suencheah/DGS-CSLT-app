@@ -129,6 +129,7 @@ const SignLanguageTranslator = () => {
     setExtractionLog([]);
     setIsRecording(false);
     if (videoRef.current) videoRef.current.src = "";
+    realtimeLandmarksRef.current = []; // Clear any stale landmark data
   }, []);
 
   const addLog = (message) => {
@@ -819,13 +820,26 @@ const SignLanguageTranslator = () => {
   }, []);
 
   // Start real-time landmark extraction during recording
-  const startRealtimeLandmarkExtraction = useCallback(() => {
+  const startRealtimeLandmarkExtraction = useCallback(async () => {
+    // Reset landmarks BEFORE initializing to avoid mixing old and new data
+    realtimeLandmarksRef.current = [];
+
+    if (landmarkExtractionIntervalRef.current) {
+      clearInterval(landmarkExtractionIntervalRef.current);
+      landmarkExtractionIntervalRef.current = null;
+    }
+
+    try {
+      await initializeRealtimeLandmarkExtraction();
+    } catch (e) {
+      console.warn("[realtime] initialize failed", e);
+      return;
+    }
+
     if (!mediapipeHandsRef.current || !webcamVideoRef.current || !canvasRef.current) {
       console.warn("[realtime] Prerequisites not met for landmark extraction");
       return;
     }
-
-    realtimeLandmarksRef.current = []; // Reset landmarks array
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const IMG_SIZE = CONFIG.IMG_SIZE;
@@ -843,7 +857,7 @@ const SignLanguageTranslator = () => {
     }, frameInterval);
 
     console.debug("[realtime] Started landmark extraction");
-  }, [CONFIG.IMG_SIZE, CONFIG.TARGET_FPS]);
+  }, [CONFIG.IMG_SIZE, CONFIG.TARGET_FPS, initializeRealtimeLandmarkExtraction]);
 
   // Stop real-time landmark extraction
   const stopRealtimeLandmarkExtraction = useCallback(() => {
@@ -854,7 +868,7 @@ const SignLanguageTranslator = () => {
     }
   }, []);
 
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback(async () => {
     if (!streamRef.current) {
       setError("Camera not active.");
       return;
@@ -934,8 +948,12 @@ const SignLanguageTranslator = () => {
       );
       setIsRecording(true);
 
-      // Start real-time landmark extraction
-      startRealtimeLandmarkExtraction();
+      // Start real-time landmark extraction (await to ensure it runs during recording)
+      try {
+        await startRealtimeLandmarkExtraction();
+      } catch (e) {
+        console.warn("[startRecording] realtime extraction failed to start", e);
+      }
 
       // Start countdown and auto-stop timer
       const maxSeconds = DEFAULT_RECORD_MAX_SECONDS;
@@ -1028,6 +1046,89 @@ const SignLanguageTranslator = () => {
 
     // Concatenate [Left Hand (21*3), Right Hand (21*3)]
     return [...leftHand, ...rightHand];
+  };
+
+  const LANDMARK_QUALITY_THRESHOLDS = {
+    minValidFrames: 10,
+    minValidFrameRatio: 0.10,
+    maxZeroRatio: 0.90,
+    hardZeroRatio: 0.98,
+  };
+
+  const formatQualitySummary = (quality) => {
+    const nonZeroPercent = Math.round((1 - quality.zeroRatio) * 100);
+    const validFrameRatio = quality.totalFrames
+      ? Math.round((quality.validFrames / quality.totalFrames) * 100)
+      : 0;
+    return `${nonZeroPercent}% non-zero, ${quality.validFrames}/${quality.totalFrames} frames with landmarks (${validFrameRatio}% valid)`;
+  };
+
+  const evaluateLandmarkQuality = (frames) => {
+    if (!frames || frames.length === 0) {
+      return { zeroRatio: 1, validFrames: 0, totalFrames: 0, totalCoords: 0 };
+    }
+
+    let zeroCount = 0;
+    let totalCoords = 0;
+    let validFrames = 0;
+
+    for (const frame of frames) {
+      let frameHasSignal = false;
+      for (const point of frame) {
+        const [x = 0, y = 0, z = 0] = point || [];
+        totalCoords += 3;
+        if (x === 0) zeroCount += 1;
+        if (y === 0) zeroCount += 1;
+        if (z === 0) zeroCount += 1;
+        if (x !== 0 || y !== 0 || z !== 0) {
+          frameHasSignal = true;
+        }
+      }
+      if (frameHasSignal) {
+        validFrames += 1;
+      }
+    }
+
+    const zeroRatio = totalCoords > 0 ? zeroCount / totalCoords : 1;
+    return { zeroRatio, validFrames, totalFrames: frames.length, totalCoords };
+  };
+
+  const enforceLandmarkQuality = (quality) => {
+    const timePrefix = `${new Date().toLocaleTimeString()}: `;
+    const validFrameRatio =
+      quality.totalFrames > 0 ? quality.validFrames / quality.totalFrames : 0;
+    const nonZeroPercent = Math.round((1 - quality.zeroRatio) * 100);
+
+    if (
+      quality.totalFrames === 0 ||
+      quality.validFrames === 0 ||
+      quality.zeroRatio >= LANDMARK_QUALITY_THRESHOLDS.hardZeroRatio
+    ) {
+      const msg = t("handDetectionNone");
+      setExtractionLog((prev) => [
+        ...prev,
+        `${timePrefix}${msg} (${formatQualitySummary(quality)})`,
+      ]);
+      throw new Error(msg);
+    }
+
+    if (
+      quality.validFrames < LANDMARK_QUALITY_THRESHOLDS.minValidFrames ||
+      validFrameRatio < LANDMARK_QUALITY_THRESHOLDS.minValidFrameRatio ||
+      quality.zeroRatio >= LANDMARK_QUALITY_THRESHOLDS.maxZeroRatio
+    ) {
+      const msg = t(
+        "handDetectionLow",
+        nonZeroPercent,
+        quality.validFrames,
+        quality.totalFrames
+      );
+      setExtractionLog((prev) => [
+        ...prev,
+        `${timePrefix}${msg} (${formatQualitySummary(quality)})`,
+      ]);
+      throw new Error(msg);
+    }
   };
 
   const extractLandmarksFromVideo = async (onProgressUpdate, onLogUpdate) => {
@@ -1126,6 +1227,8 @@ const SignLanguageTranslator = () => {
 
         addLocalLog(t("log_extracted_frames", landmarksList.length));
 
+        const quality = evaluateLandmarkQuality(landmarksList);
+
         const uniformTruncate = (sequence, targetLen) => {
           const N = sequence.length;
           if (N <= targetLen) return sequence.slice();
@@ -1161,7 +1264,7 @@ const SignLanguageTranslator = () => {
         const flatLandmarks = landmarksList.map((frame) => frame.flat());
         addLocalLog(t("log_landmark_extraction_complete"));
 
-        resolve({ flatLandmarks, logs: localLogs });
+        resolve({ flatLandmarks, logs: localLogs, quality });
       } catch (err) {
         const errMsg = err && err.message ? err.message : String(err);
         reject(new Error(errMsg));
@@ -1201,6 +1304,13 @@ const SignLanguageTranslator = () => {
         setExtractionLog(prev => [...prev, `${new Date().toLocaleTimeString()}: Using real-time extracted landmarks (${originalFrameCount} frames)`]);
         
         let landmarksList = realtimeLandmarksRef.current;
+
+        const quality = evaluateLandmarkQuality(landmarksList);
+        setExtractionLog((prev) => [
+          ...prev,
+          `${new Date().toLocaleTimeString()}: Quality check (recorded): ${formatQualitySummary(quality)}`,
+        ]);
+        enforceLandmarkQuality(quality);
         
         // Process landmarks (truncate or pad as needed)
         const uniformTruncate = (sequence, targetLen) => {
@@ -1242,6 +1352,14 @@ const SignLanguageTranslator = () => {
           }
         );
         
+        if (extractionResult && extractionResult.quality) {
+          setExtractionLog((prev) => [
+            ...prev,
+            `${new Date().toLocaleTimeString()}: Quality check (uploaded): ${formatQualitySummary(extractionResult.quality)}`,
+          ]);
+          enforceLandmarkQuality(extractionResult.quality);
+        }
+
         extractedLandmarks = extractionResult.flatLandmarks || [];
         setProgress(50);
       }
