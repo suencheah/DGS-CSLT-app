@@ -13,6 +13,7 @@ import {
   StopCircle,
 } from "lucide-react";
 import { translations } from "./translations";
+import packageJson from "../package.json";
 
 const SignLanguageTranslator = () => {
   // Initialize language from localStorage or default to 'en'
@@ -2145,6 +2146,11 @@ const SignLanguageTranslator = () => {
         }}
       />
       <canvas ref={canvasRef} className="hidden" />
+      
+      {/* Footer */}
+      <footer className="mt-8 py-3 text-center text-xs text-gray-400 border-t border-gray-200">
+        <p>v{packageJson.version}</p>
+      </footer>
     </div>
   );
 };
