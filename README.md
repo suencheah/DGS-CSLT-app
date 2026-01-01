@@ -1,4 +1,4 @@
-got to https://suencheah.github.io/DGS-CSLT-app/ to test out the hosted webapp complete with bckend AI Sign Language Intepretation.
+go to https://suencheah.github.io/DGS-CSLT-app/ to test out the hosted webapp complete with backend AI Sign Language Interpretation.
 
 
 Or on local, use the following to host the frontend static pages.

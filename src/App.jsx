@@ -54,7 +54,7 @@ const SignLanguageTranslator = () => {
   const [currentStage, setCurrentStage] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedMethod, setSelectedMethod] = useState("reranked_s2g_beam_g2t");
+  const [selectedMethod, setSelectedMethod] = useState("beam_s2g_beam_g2t");
   const [extractionLog, setExtractionLog] = useState([]);
   // Translation history (up to 10 recent records), persisted in localStorage
   const [translationHistory, setTranslationHistory] = useState([]);
@@ -90,8 +90,8 @@ const SignLanguageTranslator = () => {
   const stopRecordingRef = useRef(null);
 
   const fileInputRef = useRef(null);
-  const videoRef = useRef(null); // Used for both upload preview and landmark processing
-  const webcamVideoRef = useRef(null); // Only for the live camera feed
+  const videoRef = useRef(null); 
+  const webcamVideoRef = useRef(null);
   const canvasRef = useRef(null);
   const previewUrlRef = useRef(null);
   const [, forceRerender] = useState(0);
@@ -1050,8 +1050,8 @@ const SignLanguageTranslator = () => {
 
   const LANDMARK_QUALITY_THRESHOLDS = {
     minValidFrames: 10,
-    minValidFrameRatio: 0.10,
-    maxZeroRatio: 0.90,
+    minValidFrameRatio: 0.30,
+    maxZeroRatio: 0.75,
     hardZeroRatio: 0.98,
   };
 
