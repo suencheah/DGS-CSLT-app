@@ -171,7 +171,6 @@ const SignLanguageTranslator = () => {
 
   // --- Webcam Logic ---
   const startCamera = useCallback(async () => {
-    // Do not reset global UI state here; callers should do that before switching modes.
     try {
       console.debug("[startCamera] requesting media stream");
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -185,8 +184,6 @@ const SignLanguageTranslator = () => {
       const waitForVideoRef = async (timeout = 2000) => {
         const start = Date.now();
         while (!webcamVideoRef.current && Date.now() - start < timeout) {
-          // short delay
-          // eslint-disable-next-line no-await-in-loop
           await new Promise((r) => setTimeout(r, 50));
         }
         return !!webcamVideoRef.current;
@@ -216,8 +213,6 @@ const SignLanguageTranslator = () => {
           webcamVideoRef.current.addEventListener("playing", onPlaying);
           webcamVideoRef.current.addEventListener("error", onError);
 
-          // Try to play; if it fails with AbortError because the element was briefly removed,
-          // retry once shortly after.
           const tryPlay = async () => {
             try {
               const playPromise = webcamVideoRef.current.play();
@@ -232,7 +227,6 @@ const SignLanguageTranslator = () => {
                 console.debug(
                   "[startCamera] retrying video.play() after AbortError"
                 );
-                // eslint-disable-next-line no-await-in-loop
                 await new Promise((r) => setTimeout(r, 200));
                 try {
                   await webcamVideoRef.current.play();
@@ -360,23 +354,18 @@ const SignLanguageTranslator = () => {
   }, []);
 
   useEffect(() => {
-    // When input mode changes, start or stop the camera accordingly.
-    // This avoids a race where `startCamera` runs before the webcam video
-    // element is mounted and its ref is available.
     if (inputMode === "record") {
       // Start camera when entering record mode
       (async () => {
         try {
           await startCamera();
           // Initialize MediaPipe for real-time extraction after camera is ready
-          // eslint-disable-next-line react-hooks/exhaustive-deps
           await initializeRealtimeLandmarkExtraction();
         } catch (err) {
-          // startCamera already handles setting the error state
+          // startCamera already handles error state
         }
       })();
     } else {
-      // Stop camera when leaving record mode
       stopCamera();
     }
 
@@ -384,7 +373,6 @@ const SignLanguageTranslator = () => {
     return () => {
       stopCamera();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputMode, stopCamera, startCamera]);
 
   // Manage preview object URL lifecycle: create when `file` changes, revoke on cleanup
@@ -792,7 +780,7 @@ const SignLanguageTranslator = () => {
 
   // Initialize MediaPipe for real-time landmark extraction
   const initializeRealtimeLandmarkExtraction = useCallback(async () => {
-    if (mediapipeHandsRef.current) return; // Already initialized
+    if (mediapipeHandsRef.current) return;
 
     try {
       const hands = new window.Hands({
@@ -822,7 +810,7 @@ const SignLanguageTranslator = () => {
 
   // Start real-time landmark extraction during recording
   const startRealtimeLandmarkExtraction = useCallback(async () => {
-    // Reset landmarks BEFORE initializing to avoid mixing old and new data
+    // Reset landmarks before initializing 
     realtimeLandmarksRef.current = [];
 
     if (landmarkExtractionIntervalRef.current) {
@@ -874,7 +862,6 @@ const SignLanguageTranslator = () => {
       setError("Camera not active.");
       return;
     }
-    // Use an internal chunks buffer on the MediaRecorder instance to avoid relying on React state updates inside the dataavailable handler.
     try {
       mediaRecorderRef.current = new MediaRecorder(streamRef.current);
     } catch (err) {
@@ -1022,7 +1009,6 @@ const SignLanguageTranslator = () => {
     stopRecordingRef.current = stopRecording;
   }, [stopRecording]);
 
-  // --- Landmark Extraction Logic (unchanged from original) ---
   const extractTwoHandLandmarks = (handsResults) => {
     let leftHand = new Array(21).fill(null).map(() => [0, 0, 0]);
     let rightHand = new Array(21).fill(null).map(() => [0, 0, 0]);
@@ -1034,9 +1020,6 @@ const SignLanguageTranslator = () => {
 
         const landmarkArray = handLandmarks.map((lm) => [lm.x, lm.y, lm.z]);
 
-        // Note: MediaPipe's 'Left' and 'Right' labels are relative to the camera,
-        // so 'Right' hand in the frame is the user's left hand. This logic maintains
-        // a consistent structure for the model input (LeftHandLandmarks, RightHandLandmarks).
         if (handLabel === "Left") {
           leftHand = landmarkArray;
         } else if (handLabel === "Right") {
@@ -1045,7 +1028,6 @@ const SignLanguageTranslator = () => {
       }
     }
 
-    // Concatenate [Left Hand (21*3), Right Hand (21*3)]
     return [...leftHand, ...rightHand];
   };
 
@@ -1170,10 +1152,10 @@ const SignLanguageTranslator = () => {
           landmarksList.push(frameLandmarks);
           processedFrames++;
 
-          // Update progress only every 5% increment to reduce re-renders
+          // Update progress logs
           if (totalFrames > 0) {
             const extractionProgress = (processedFrames / totalFrames) * 50;
-            const roundedProgress = Math.floor(extractionProgress / 5) * 5; // Round to nearest 5%
+            const roundedProgress = Math.floor(extractionProgress / 5) * 5;
             
             if (roundedProgress > lastProgressUpdate && onProgressUpdate) {
               lastProgressUpdate = roundedProgress;
@@ -1181,7 +1163,6 @@ const SignLanguageTranslator = () => {
             }
           }
 
-          // Add log every 25 frames but don't trigger state update
           if (processedFrames % 25 === 0) {
             addLocalLog(t("log_processed_frames", processedFrames, totalFrames));
           }
@@ -1464,7 +1445,6 @@ const SignLanguageTranslator = () => {
 
   // --- External Script Loading ---
   useEffect(() => {
-    // Load MediaPipe scripts dynamically to ensure they are available globally
     const scripts = [
       "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js",
       "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js",
@@ -1804,32 +1784,6 @@ const SignLanguageTranslator = () => {
               fileProp={file}
               previewUrlProp={previewUrlRef.current}
             />
-
-            {/* <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                <Settings className="mr-2" size={24} />
-                {t("advancedTranslationMethod")}
-              </h2>
-
-              <div className="space-y-2">
-                {Object.entries(translationMethods).map(([key, label]) => (
-                  <label
-                    key={key}
-                    className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                  >
-                    <input
-                      type="radio"
-                      name="method"
-                      value={key}
-                      checked={selectedMethod === key}
-                      onChange={(e) => setSelectedMethod(e.target.value)}
-                      className="mr-3 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-gray-700">{label}</span>
-                  </label>
-                ))}
-              </div>
-            </div> */}
           </div>
 
           {/* Results Card */}
